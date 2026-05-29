@@ -6,7 +6,7 @@ use config::AuthConfig;
 
 #[derive(Default)]
 pub struct Auth {
-    config: AuthConfig,
+    pub(crate) config: AuthConfig,
 }
 
 #[derive(Debug)]
