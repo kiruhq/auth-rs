@@ -35,6 +35,11 @@ impl EmailAndPasswordBuilder {
         self.config.enabled = enabled;
         self
     }
+
+    pub fn auto_sign_in(mut self, enabled: bool) -> Self {
+        self.config.auto_sign_in = enabled;
+        self
+    }
 }
 
 #[cfg(test)]
@@ -43,9 +48,19 @@ mod tests {
 
     #[test]
     fn test_email_password_builder() {
-        let builder = Auth::builder().email_and_password(|config| config.enabled(true));
+        let defaults = Auth::builder().build().expect("should build fine");
+        let config = defaults.config.email_and_password;
+
+        assert!(config.enabled, "email_and_password should be enabled");
+        assert!(!config.auto_sign_in, "auto sign in should be disabled");
+
+        let builder =
+            Auth::builder().email_and_password(|config| config.enabled(true).auto_sign_in(false));
         let auth = builder.build().expect("should build fine");
 
-        assert!(auth.config.email_and_password.enabled)
+        let config = auth.config.email_and_password;
+
+        assert!(config.enabled, "email_and_password should be enabled");
+        assert!(!config.auto_sign_in, "auto sign in should be disabled")
     }
 }
