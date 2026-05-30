@@ -30,9 +30,13 @@ pub(crate) struct CreateAccount {
     pub password: Option<String>,
 }
 
-pub(crate) enum CreateAccountError {}
+pub(crate) enum CreateAccountError {
+    Stub,
+}
 
-pub(crate) enum GetAccountError {}
+pub(crate) enum GetAccountError {
+    Stub,
+}
 
 #[async_trait::async_trait]
 pub(crate) trait AccountStore: Send {

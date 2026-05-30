@@ -12,6 +12,16 @@ pub(crate) struct User {
     updated_at: DateTime<Utc>,
 }
 
-pub(crate) struct Account {}
+#[derive(Clone)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
+pub(crate) struct Account {
+    id: String,
+    account_id: String,
+    user_id: String,
+    provider_id: String,
+    password: Option<String>,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+}
 
 pub(crate) struct Session {}
