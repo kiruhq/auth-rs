@@ -1,5 +1,8 @@
 use crate::auth::config::EmailAndPasswordConfig;
 use crate::axum::AuthState;
+use crate::store::{
+    CreateUserWithCredentialAccountInput, CreateUserWithCredentialAccountResult, Store,
+};
 use crate::types::payload::{EmailSignInBody, EmailSignUpBody};
 use axum::{Json, extract::State, http::StatusCode};
 use email_address::{EmailAddress, Options};
@@ -12,20 +15,18 @@ enum EmailSignUpValidationError {
 }
 
 fn validate_signup_input(
-    _config: &EmailAndPasswordConfig,
+    config: &EmailAndPasswordConfig,
     payload: &EmailSignUpBody,
 ) -> Result<(), EmailSignUpValidationError> {
     if payload.password.is_empty() {
         return Err(EmailSignUpValidationError::InvalidPassword);
     }
 
-    // TODO - Make this configurable
-    if payload.password.len() < 8 {
+    if payload.password.len() < config.min_password_length as usize {
         return Err(EmailSignUpValidationError::PasswordTooShort);
     }
 
-    // TODO - Make this configurable
-    if payload.password.len() > 128 {
+    if payload.password.len() > config.max_password_length as usize {
         return Err(EmailSignUpValidationError::PasswordTooLong);
     }
 
@@ -51,7 +52,7 @@ fn normalize_email(email: &str) -> Result<String, EmailSignUpValidationError> {
 
 pub(crate) async fn signup(
     State(state): State<AuthState>,
-    Json(mut payload): Json<EmailSignUpBody>,
+    Json(payload): Json<EmailSignUpBody>,
 ) -> StatusCode {
     let auth = state.auth();
     let config = &auth.config.email_and_password;
@@ -69,9 +70,15 @@ pub(crate) async fn signup(
 
     // 5. Normalize email.
     // Better Auth lowercases the email before lookup and storage.
-    payload.email = match normalize_email(&payload.email) {
-        Ok(x) => x,
-        Err(_) => return StatusCode::BAD_REQUEST,
+    let Ok(normalized_email) = normalize_email(&payload.email) else {
+        return StatusCode::BAD_REQUEST;
+    };
+
+    let password = payload.password.clone();
+    let hasher = config.password_hasher.clone();
+    let Ok(Ok(hashed_password)) = tokio::task::spawn_blocking(move || hasher.hash(&password)).await
+    else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
     };
 
     // 2. Start a database transaction.
@@ -87,7 +94,6 @@ pub(crate) async fn signup(
     // - optionally call on_existing_user_sign_up
     // - return { token: null, user: synthetic_user }
     // Otherwise return 422 user already exists.
-
     // 8. If the user does not exist.
     // Hash the password before creating the user so hashing failures happen
     // before any database writes. Then create:
@@ -96,6 +102,33 @@ pub(crate) async fn signup(
     // - account_id = user.id
     // - user_id = user.id
     // - password = hash
+
+    // TODO - Generate UserID and AccountID
+    let input = CreateUserWithCredentialAccountInput {
+        user_id: "".to_string(),
+        account_id: "".to_string(),
+        email: normalized_email,
+        hashed_password,
+        name: payload.name,
+    };
+
+    let result = state
+        .inner
+        .store
+        .create_user_with_credential_account(input)
+        .await;
+
+    let result = match result {
+        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR,
+        Ok(result) => result,
+    };
+
+    let _user = match result {
+        CreateUserWithCredentialAccountResult::EmailAlreadyExists => {
+            return StatusCode::UNPROCESSABLE_ENTITY;
+        }
+        CreateUserWithCredentialAccountResult::Created { user } => user,
+    };
 
     // 9. Send verification email if configured.
     // Better Auth uses:

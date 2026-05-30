@@ -9,9 +9,11 @@ axum = ["dep:axum"]
 sqlx = ["dep:sqlx"]
 
 [dependencies]
+argon2 = { version = "0.5", features = ["std"] }
 axum = { version = "0.8", optional = true }
 chrono = "0.4.44"
 email_address = "0.2.9"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.150" }
 sqlx = { version="0.9.0", features = ["runtime-tokio", "postgres", "chrono"], optional = true }
+tokio = "1.52.3"
