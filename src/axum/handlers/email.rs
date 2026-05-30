@@ -1,9 +1,9 @@
-use crate::auth::config::EmailAndPasswordConfig;
+use crate::adapters::database::DatabaseAdapter;
+use crate::adapters::traits::{AccountStore, CreateAccount, CreateUser, UserStore};
+use crate::auth::config::{EmailAndPasswordConfig, ModelName};
 use crate::axum::AuthState;
-use crate::store::{
-    CreateUserWithCredentialAccountInput, CreateUserWithCredentialAccountResult, Store,
-};
 use crate::types::payload::{EmailSignInBody, EmailSignUpBody};
+use argon2::password_hash;
 use axum::{Json, extract::State, http::StatusCode};
 use email_address::{EmailAddress, Options};
 
@@ -50,10 +50,13 @@ fn normalize_email(email: &str) -> Result<String, EmailSignUpValidationError> {
     Ok(email)
 }
 
-pub(crate) async fn signup(
-    State(state): State<AuthState>,
+pub(crate) async fn signup<DB>(
+    State(state): State<AuthState<DB>>,
     Json(payload): Json<EmailSignUpBody>,
-) -> StatusCode {
+) -> StatusCode
+where
+    DB: DatabaseAdapter,
+{
     let auth = state.auth();
     let config = &auth.config.email_and_password;
 
@@ -103,31 +106,42 @@ pub(crate) async fn signup(
     // - user_id = user.id
     // - password = hash
 
-    // TODO - Generate UserID and AccountID
-    let input = CreateUserWithCredentialAccountInput {
-        user_id: "".to_string(),
-        account_id: "".to_string(),
-        email: normalized_email,
-        hashed_password,
+    let user_id = auth.generate_id(ModelName::User);
+    let account_id = auth.generate_id(ModelName::Account);
+
+    let Ok(mut txdb) = auth.database.begin_txn().await else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    };
+
+    let Ok(result) = txdb.get_user_by_email(&normalized_email).await else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    };
+
+    if result.is_some() {
+        return StatusCode::UNPROCESSABLE_ENTITY;
+    };
+
+    let input = CreateUser {
+        id: user_id.clone(),
         name: payload.name,
+        email: normalized_email,
+        image: None,
     };
 
-    let result = state
-        .inner
-        .store
-        .create_user_with_credential_account(input)
-        .await;
-
-    let result = match result {
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR,
-        Ok(result) => result,
+    let Ok(_) = txdb.create_user(input).await else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
     };
 
-    let _user = match result {
-        CreateUserWithCredentialAccountResult::EmailAlreadyExists => {
-            return StatusCode::UNPROCESSABLE_ENTITY;
-        }
-        CreateUserWithCredentialAccountResult::Created { user } => user,
+    let input = CreateAccount {
+        id: account_id,
+        account_id: user_id.clone(),
+        user_id,
+        provider_id: "credential".to_string(),
+        password: Some(hashed_password),
+    };
+
+    let Ok(_) = txdb.create_account(input).await else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
     };
 
     // 9. Send verification email if configured.
@@ -146,9 +160,12 @@ pub(crate) async fn signup(
     StatusCode::OK
 }
 
-pub(crate) async fn signin(
-    State(_auth): State<AuthState>,
+pub(crate) async fn signin<DB>(
+    State(_auth): State<AuthState<DB>>,
     Json(_payload): Json<EmailSignInBody>,
-) -> StatusCode {
+) -> StatusCode
+where
+    DB: DatabaseAdapter,
+{
     StatusCode::OK
 }

@@ -1,16 +1,18 @@
-use super::AuthError;
 use super::config::{AuthConfig, EmailAndPasswordConfig};
+use crate::adapters::database::DatabaseAdapter;
 use crate::auth::Auth;
-use crate::store::StoreKind;
-use crate::store::memory::MemoryStore;
+use std::sync::Arc;
 
 #[derive(Default)]
-pub struct AuthBuilder {
+pub struct NoAdapter;
+
+#[derive(Default)]
+pub struct AuthBuilder<DB = NoAdapter> {
     config: AuthConfig,
-    store: Option<StoreKind>,
+    database: DB,
 }
 
-impl AuthBuilder {
+impl<DB> AuthBuilder<DB> {
     pub fn email_and_password<F>(mut self, f: F) -> Self
     where
         F: FnOnce(EmailAndPasswordBuilder) -> EmailAndPasswordBuilder,
@@ -22,18 +24,29 @@ impl AuthBuilder {
         self.config.email_and_password = f(builder).config;
         self
     }
+}
 
-    pub fn memory(mut self) -> Self {
-        self.store = Some(StoreKind::Memory(MemoryStore::default()));
-        self
-    }
-
-    pub fn build(self) -> Result<Auth, AuthError> {
-        let store = self.store.ok_or(AuthError::MissingStore)?;
-        Ok(Auth {
+impl AuthBuilder<NoAdapter> {
+    pub fn database<DB>(self, database: DB) -> AuthBuilder<DB>
+    where
+        DB: DatabaseAdapter,
+    {
+        AuthBuilder {
             config: self.config,
-            store,
-        })
+            database,
+        }
+    }
+}
+
+impl<DB> AuthBuilder<DB>
+where
+    DB: DatabaseAdapter,
+{
+    pub fn build(self) -> Auth<DB> {
+        Auth {
+            config: self.config,
+            database: Arc::new(self.database),
+        }
     }
 }
 
@@ -60,21 +73,20 @@ mod tests {
 
     #[test]
     fn test_email_password_builder() {
-        let defaults = Auth::builder().memory().build().expect("should build fine");
+        let defaults = Auth::builder();
         let config = defaults.config.email_and_password;
+
+        assert!(!config.enabled, "email_and_password should be disabled");
+        assert!(config.auto_sign_in, "auto sign in should be enabled");
+    }
+
+    #[test]
+    fn test_email_password_builder_overrides_config() {
+        let builder =
+            Auth::builder().email_and_password(|config| config.enabled(true).auto_sign_in(false));
+        let config = builder.config.email_and_password;
 
         assert!(config.enabled, "email_and_password should be enabled");
         assert!(!config.auto_sign_in, "auto sign in should be disabled");
-
-        let builder = Auth::builder()
-            .email_and_password(|config| config.enabled(true).auto_sign_in(false))
-            .memory();
-
-        let auth = builder.build().expect("should build fine");
-
-        let config = auth.config.email_and_password;
-
-        assert!(config.enabled, "email_and_password should be enabled");
-        assert!(!config.auto_sign_in, "auto sign in should be disabled")
     }
 }

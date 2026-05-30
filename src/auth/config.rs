@@ -1,12 +1,18 @@
+mod advanced;
+mod id_generator;
+
 use std::sync::Arc;
 
 use argon2::PasswordHasher as Argon2PasswordHasherTrait;
 use argon2::password_hash::{SaltString, rand_core::OsRng};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 
+use advanced::AdvancedConfig;
+
 #[derive(Default)]
 pub struct AuthConfig {
     pub email_and_password: EmailAndPasswordConfig,
+    pub advanced: AdvancedConfig,
 }
 
 pub struct EmailAndPasswordConfig {
@@ -60,5 +66,26 @@ impl PasswordHasher for Argon2PasswordHasher {
             .map_err(PasswordHasherError::Argon2)?;
 
         Ok(true)
+    }
+}
+
+pub enum ModelName<'a> {
+    User,
+    Account,
+    Session,
+    Verification,
+    Custom(&'a str),
+}
+
+impl<'a> ToString for ModelName<'a> {
+    fn to_string(&self) -> String {
+        match self {
+            Self::User => "user",
+            Self::Account => "account",
+            Self::Session => "session",
+            Self::Verification => "verification",
+            Self::Custom(x) => x,
+        }
+        .to_string()
     }
 }

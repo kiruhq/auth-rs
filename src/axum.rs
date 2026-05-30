@@ -2,21 +2,22 @@ mod handlers;
 mod types;
 
 use crate::Auth;
+use crate::adapters::database::DatabaseAdapter;
 use axum::Router;
 use axum::routing::post;
 use std::sync::Arc;
 
-struct AuthState {
-    inner: Arc<Auth>,
+struct AuthState<DB> {
+    inner: Arc<Auth<DB>>,
 }
 
-impl AuthState {
-    pub(crate) fn auth(&self) -> &Auth {
+impl<DB> AuthState<DB> {
+    pub(crate) fn auth(&self) -> &Auth<DB> {
         &self.inner
     }
 }
 
-impl Clone for AuthState {
+impl<DB> Clone for AuthState<DB> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -24,8 +25,11 @@ impl Clone for AuthState {
     }
 }
 
-pub fn router(auth: Auth) -> Router {
-    let mut router: Router<AuthState> = Router::new();
+pub fn router<DB>(auth: Auth<DB>) -> Router
+where
+    DB: DatabaseAdapter,
+{
+    let mut router: Router<AuthState<DB>> = Router::new();
 
     if auth.config.email_and_password.enabled {
         router = setup_email_password_routes(router);
@@ -36,7 +40,10 @@ pub fn router(auth: Auth) -> Router {
     })
 }
 
-fn setup_email_password_routes(router: Router<AuthState>) -> Router<AuthState> {
+fn setup_email_password_routes<DB>(router: Router<AuthState<DB>>) -> Router<AuthState<DB>>
+where
+    DB: DatabaseAdapter,
+{
     router
         .route("/sign-up/email", post(handlers::email::signup))
         .route("/sign-in/email", post(handlers::email::signin))

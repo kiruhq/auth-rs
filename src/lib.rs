@@ -1,4 +1,6 @@
+mod adapters;
 mod auth;
+mod core;
 mod store;
 mod types;
 
