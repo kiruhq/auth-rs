@@ -1,5 +1,7 @@
 mod account;
+mod pending;
 mod user;
+mod verification;
 
 use crate::adapters::database::{AdapterError, DatabaseAdapter, DatabaseTransaction};
 

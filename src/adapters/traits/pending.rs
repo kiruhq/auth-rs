@@ -1,15 +1,20 @@
 use crate::core::entity::PendingSignup;
 
-pub(crate) struct CreatePendingSignup {
-    email: String,
-    password_hash: String,
+pub struct CreatePendingSignup {
+    pub id: String,
+    pub user_id: String,
+    pub account_id: String,
+    pub email: String,
+    pub name: String,
+    pub image: Option<String>,
+    pub password_hash: String,
 }
 
-enum CreatePendingSignupError {
+pub enum CreatePendingSignupError {
     Stub,
 }
 
-enum GetPendingSignupError {
+pub enum GetPendingSignupError {
     Stub,
 }
 
@@ -23,5 +28,5 @@ pub(crate) trait PendingSignupStore: Send {
     async fn get_pending_signup_by_id(
         &mut self,
         id: &str,
-    ) -> Result<PendingSignup, GetPendingSignupError>;
+    ) -> Result<Option<PendingSignup>, GetPendingSignupError>;
 }

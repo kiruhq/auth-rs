@@ -1,11 +1,16 @@
-use super::traits::{account::AccountStore, user::UserStore};
+use super::traits::{
+    account::AccountStore, pending::PendingSignupStore, user::UserStore,
+    verification::VerificationStore,
+};
 
 pub enum AdapterError {
     SqlxError(),
 }
 
 #[async_trait::async_trait]
-pub trait DatabaseAdapter: UserStore + AccountStore + Send + Sync + 'static {
+pub trait DatabaseAdapter:
+    UserStore + AccountStore + PendingSignupStore + VerificationStore + Send + Sync + 'static
+{
     type Transaction<'a>: DatabaseTransaction + 'a
     where
         Self: 'a;
@@ -14,7 +19,9 @@ pub trait DatabaseAdapter: UserStore + AccountStore + Send + Sync + 'static {
 }
 
 #[async_trait::async_trait]
-pub trait DatabaseTransaction: UserStore + AccountStore + Send + Sync {
+pub trait DatabaseTransaction:
+    UserStore + AccountStore + PendingSignupStore + VerificationStore + Send + Sync
+{
     async fn commit(self) -> Result<(), AdapterError>;
     async fn rollback(self) -> Result<(), AdapterError>;
 }
