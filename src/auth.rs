@@ -13,11 +13,6 @@ pub struct Auth<DB> {
     pub(crate) database: Arc<DB>,
 }
 
-#[derive(Debug)]
-pub enum AuthError {
-    MissingStore,
-}
-
 impl Auth<()> {
     pub fn builder() -> AuthBuilder {
         AuthBuilder::default()
