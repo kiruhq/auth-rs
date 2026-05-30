@@ -1,10 +1,13 @@
 use super::AuthError;
 use super::config::{AuthConfig, EmailAndPasswordConfig};
 use crate::auth::Auth;
+use crate::store::StoreKind;
+use crate::store::memory::MemoryStore;
 
 #[derive(Default)]
 pub struct AuthBuilder {
     config: AuthConfig,
+    store: Option<StoreKind>,
 }
 
 impl AuthBuilder {
@@ -20,8 +23,17 @@ impl AuthBuilder {
         self
     }
 
+    pub fn memory(mut self) -> Self {
+        self.store = Some(StoreKind::Memory(MemoryStore::default()));
+        self
+    }
+
     pub fn build(self) -> Result<Auth, AuthError> {
-        Ok(Auth::new(self.config))
+        let store = self.store.ok_or(AuthError::MissingStore)?;
+        Ok(Auth {
+            config: self.config,
+            store,
+        })
     }
 }
 
@@ -48,14 +60,16 @@ mod tests {
 
     #[test]
     fn test_email_password_builder() {
-        let defaults = Auth::builder().build().expect("should build fine");
+        let defaults = Auth::builder().memory().build().expect("should build fine");
         let config = defaults.config.email_and_password;
 
         assert!(config.enabled, "email_and_password should be enabled");
         assert!(!config.auto_sign_in, "auto sign in should be disabled");
 
-        let builder =
-            Auth::builder().email_and_password(|config| config.enabled(true).auto_sign_in(false));
+        let builder = Auth::builder()
+            .email_and_password(|config| config.enabled(true).auto_sign_in(false))
+            .memory();
+
         let auth = builder.build().expect("should build fine");
 
         let config = auth.config.email_and_password;

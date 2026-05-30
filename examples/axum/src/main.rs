@@ -1,7 +1,12 @@
 use axum::{Router, routing::get};
+use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() {
+    let pool = sqlx::PgPoolOptions::new()
+        .max_connections(5)
+        .connect("postgres://postgres:postgres@localhost/test").await?
+
     let app = Router::new().route("/", get(|| async { "Hello, world!" }));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")

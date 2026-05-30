@@ -1,25 +1,83 @@
+use crate::auth::config::EmailAndPasswordConfig;
 use crate::axum::AuthState;
 use crate::types::payload::{EmailSignInBody, EmailSignUpBody};
 use axum::{Json, extract::State, http::StatusCode};
+use email_address::{EmailAddress, Options};
+
+enum EmailSignUpValidationError {
+    PasswordTooShort,
+    PasswordTooLong,
+    InvalidPassword,
+    InvalidEmail,
+}
+
+fn validate_signup_input(
+    _config: &EmailAndPasswordConfig,
+    payload: &EmailSignUpBody,
+) -> Result<(), EmailSignUpValidationError> {
+    if payload.password.is_empty() {
+        return Err(EmailSignUpValidationError::InvalidPassword);
+    }
+
+    // TODO - Make this configurable
+    if payload.password.len() < 8 {
+        return Err(EmailSignUpValidationError::PasswordTooShort);
+    }
+
+    // TODO - Make this configurable
+    if payload.password.len() > 128 {
+        return Err(EmailSignUpValidationError::PasswordTooLong);
+    }
+
+    if !email_address::EmailAddress::is_valid(&payload.email) {
+        return Err(EmailSignUpValidationError::InvalidEmail);
+    }
+
+    Ok(())
+}
+
+fn normalize_email(email: &str) -> Result<String, EmailSignUpValidationError> {
+    let email = email.trim().to_lowercase();
+
+    let options = Options::default()
+        .without_display_text()
+        .without_domain_literal();
+
+    EmailAddress::parse_with_options(&email, options)
+        .map_err(|_| EmailSignUpValidationError::InvalidEmail)?;
+
+    Ok(email)
+}
 
 pub(crate) async fn signup(
-    State(_auth): State<AuthState>,
-    Json(_payload): Json<EmailSignUpBody>,
+    State(state): State<AuthState>,
+    Json(mut payload): Json<EmailSignUpBody>,
 ) -> StatusCode {
-    // 2. Start a database transaction.
-    // Everything from user lookup through account/session creation should be
-    // atomic so a user row is not left without its credential account row.
+    let auth = state.auth();
+    let config = &auth.config.email_and_password;
 
-    // 3. Check email/password config.
+    // Check email/password config.
     // Reject if email_and_password.enabled is false or disable_sign_up is true.
+    if !config.enabled || config.disable_sign_up {
+        return StatusCode::NOT_FOUND;
+    }
 
-    // 4. Validate input.
-    // Required: name, email, password. Validate email format, require password
-    // to be present, and enforce configured min/max password length.
+    // TODO - Handle this properly
+    if validate_signup_input(config, &payload).is_err() {
+        return StatusCode::BAD_REQUEST;
+    }
 
     // 5. Normalize email.
     // Better Auth lowercases the email before lookup and storage.
+    payload.email = match normalize_email(&payload.email) {
+        Ok(x) => x,
+        Err(_) => return StatusCode::BAD_REQUEST,
+    };
 
+    // 2. Start a database transaction.
+    // Everything from user lookup through account/session creation should be
+    // atomic so a user row is not left without its credential account row.
+    //
     // 6. Look up an existing user by normalized email.
 
     // 7. If the user already exists.

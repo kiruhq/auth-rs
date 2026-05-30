@@ -8,7 +8,7 @@ pub struct EmailSignUpBody {
     pub image: Option<String>,
     #[serde(rename = "rememberMe")]
     pub remember_me: Option<bool>,
-    #[serde(rename = "callbackUrl")]
+    #[serde(rename = "callbackURL")]
     pub callback_url: Option<String>,
 }
 
@@ -18,6 +18,6 @@ pub struct EmailSignInBody {
     pub password: String,
     #[serde(rename = "rememberMe")]
     pub remember_me: Option<bool>,
-    #[serde(rename = "callbackUrl")]
+    #[serde(rename = "callbackURL")]
     pub callback_url: Option<String>,
 }

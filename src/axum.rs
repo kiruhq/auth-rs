@@ -6,7 +6,6 @@ use axum::Router;
 use axum::routing::post;
 use std::sync::Arc;
 
-#[derive(Clone)]
 struct AuthState {
     inner: Arc<Auth>,
 }
@@ -14,6 +13,14 @@ struct AuthState {
 impl AuthState {
     pub(crate) fn auth(&self) -> &Auth {
         &self.inner
+    }
+}
+
+impl Clone for AuthState {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
     }
 }
 

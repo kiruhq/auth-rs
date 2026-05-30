@@ -1,22 +1,22 @@
 mod builder;
-mod config;
+pub(crate) mod config;
+
+use crate::store::StoreKind;
 
 use builder::AuthBuilder;
 use config::AuthConfig;
 
-#[derive(Default)]
 pub struct Auth {
     pub(crate) config: AuthConfig,
+    pub(crate) store: StoreKind,
 }
 
 #[derive(Debug)]
-pub enum AuthError {}
+pub enum AuthError {
+    MissingStore,
+}
 
 impl Auth {
-    pub fn new(config: AuthConfig) -> Self {
-        Auth { config }
-    }
-
     pub fn builder() -> AuthBuilder {
         AuthBuilder::default()
     }
