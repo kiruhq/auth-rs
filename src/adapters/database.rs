@@ -1,4 +1,4 @@
-use super::traits::{AccountStore, UserStore};
+use super::traits::{account::AccountStore, user::UserStore};
 
 pub enum AdapterError {
     SqlxError(),

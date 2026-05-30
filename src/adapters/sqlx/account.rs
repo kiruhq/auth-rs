@@ -1,5 +1,7 @@
 use crate::adapters::sqlx::{SqlxPostgresAdapter, SqlxPostgresTxnAdapter};
-use crate::adapters::traits::{AccountStore, CreateAccount, CreateAccountError, GetAccountError};
+use crate::adapters::traits::account::{
+    AccountStore, CreateAccount, CreateAccountError, GetAccountError,
+};
 use crate::core::entity::Account;
 
 #[async_trait::async_trait]

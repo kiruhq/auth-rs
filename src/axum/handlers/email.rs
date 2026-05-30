@@ -1,9 +1,11 @@
 use crate::adapters::database::DatabaseAdapter;
-use crate::adapters::traits::{AccountStore, CreateAccount, CreateUser, UserStore};
+use crate::adapters::traits::{
+    account::{AccountStore, CreateAccount},
+    user::{CreateUser, UserStore},
+};
 use crate::auth::config::{EmailAndPasswordConfig, ModelName};
 use crate::axum::AuthState;
 use crate::types::payload::{EmailSignInBody, EmailSignUpBody};
-use argon2::password_hash;
 use axum::{Json, extract::State, http::StatusCode};
 use email_address::{EmailAddress, Options};
 

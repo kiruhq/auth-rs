@@ -1,6 +1,6 @@
 use super::SqlxPostgresAdapter;
 use crate::adapters::sqlx::SqlxPostgresTxnAdapter;
-use crate::adapters::traits::{CreateUser, CreateUserError, GetUserError, UserStore};
+use crate::adapters::traits::user::{CreateUser, CreateUserError, GetUserError, UserStore};
 use crate::core::entity::User;
 
 #[async_trait::async_trait]
