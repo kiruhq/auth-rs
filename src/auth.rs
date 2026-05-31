@@ -1,5 +1,6 @@
 mod builder;
 pub(crate) mod config;
+pub(crate) mod verification;
 
 use std::sync::Arc;
 

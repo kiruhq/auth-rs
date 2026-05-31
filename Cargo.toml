@@ -12,10 +12,14 @@ sqlx = ["dep:sqlx"]
 argon2 = { version = "0.5", features = ["std"] }
 async-trait = "0.1.89"
 axum = { version = "0.8", optional = true }
+base64 = "0.22.1"
 chrono = "0.4.44"
 email_address = "0.2.9"
+hex = "0.4.3"
 ksuid = "0.2.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.150" }
+sha2 = "0.11.0"
 sqlx = { version="0.9.0", features = ["runtime-tokio", "postgres", "chrono"], optional = true }
 tokio = "1.52.3"
+url = "2.5.8"

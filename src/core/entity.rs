@@ -3,51 +3,51 @@ use chrono::{DateTime, Utc};
 #[derive(Clone)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct User {
-    id: String,
-    name: String,
-    email: String,
-    email_verified: bool,
-    image: Option<String>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub email_verified: bool,
+    pub image: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Clone)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct Account {
-    id: String,
-    account_id: String,
-    user_id: String,
-    provider_id: String,
-    password: Option<String>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    pub id: String,
+    pub account_id: String,
+    pub user_id: String,
+    pub provider_id: String,
+    pub password: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Clone)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct PendingSignup {
-    id: String,
-    user_id: String,
-    account_id: String,
-    email: String,
-    name: String,
-    password_hash: String,
-    image: Option<String>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    pub id: String,
+    pub user_id: String,
+    pub account_id: String,
+    pub email: String,
+    pub name: String,
+    pub password_hash: String,
+    pub image: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Clone)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct Verification {
-    id: String,
-    kind: String,
-    identifier: String,
-    token_hash: String,
-    expires_at: DateTime<Utc>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    pub id: String,
+    pub kind: String,
+    pub identifier: String,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 pub(crate) struct Session {}

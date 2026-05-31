@@ -1,4 +1,5 @@
 mod advanced;
+mod email_verification;
 mod id_generator;
 
 use std::sync::Arc;
@@ -9,15 +10,21 @@ use argon2::{Argon2, PasswordHash, PasswordVerifier};
 
 use advanced::AdvancedConfig;
 
+pub use crate::auth::config::email_verification::*;
+
 #[derive(Default)]
 pub struct AuthConfig {
+    pub base_url: String,
+    pub base_path: String,
     pub email_and_password: EmailAndPasswordConfig,
     pub advanced: AdvancedConfig,
+    pub email_verification: EmailVerificationConfig,
 }
 
 pub struct EmailAndPasswordConfig {
     pub enabled: bool,
     pub disable_sign_up: bool,
+    pub require_email_verification: bool,
     pub auto_sign_in: bool,
     pub min_password_length: u32,
     pub max_password_length: u32,
@@ -29,6 +36,7 @@ impl Default for EmailAndPasswordConfig {
         EmailAndPasswordConfig {
             enabled: false,
             disable_sign_up: false,
+            require_email_verification: false,
             auto_sign_in: true,
             min_password_length: 8,
             max_password_length: 128,
@@ -74,6 +82,7 @@ pub enum ModelName<'a> {
     Account,
     Session,
     Verification,
+    PendingSignup,
     Custom(&'a str),
 }
 
@@ -84,6 +93,7 @@ impl<'a> ToString for ModelName<'a> {
             Self::Account => "account",
             Self::Session => "session",
             Self::Verification => "verification",
+            Self::PendingSignup => "pending",
             Self::Custom(x) => x,
         }
         .to_string()

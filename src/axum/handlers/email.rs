@@ -1,12 +1,18 @@
-use crate::adapters::database::DatabaseAdapter;
+use crate::adapters::database::{DatabaseAdapter, DatabaseTransaction};
+use crate::adapters::traits::pending::{CreatePendingSignup, PendingSignupStore};
+use crate::adapters::traits::verification::{CreateVerification, VerificationStore};
 use crate::adapters::traits::{
     account::{AccountStore, CreateAccount},
     user::{CreateUser, UserStore},
 };
-use crate::auth::config::{EmailAndPasswordConfig, ModelName};
+use crate::auth::config::{
+    EmailAndPasswordConfig, ModelName, SendVerificationEmail, VerificationEmailUser,
+};
+use crate::auth::verification;
 use crate::axum::AuthState;
 use crate::types::payload::{EmailSignInBody, EmailSignUpBody};
 use axum::{Json, extract::State, http::StatusCode};
+use chrono::Utc;
 use email_address::{EmailAddress, Options};
 
 enum EmailSignUpValidationError {
@@ -73,11 +79,10 @@ where
         return StatusCode::BAD_REQUEST;
     }
 
-    // 5. Normalize email.
-    // Better Auth lowercases the email before lookup and storage.
     let Ok(normalized_email) = normalize_email(&payload.email) else {
         return StatusCode::BAD_REQUEST;
     };
+    let callback_url = payload.callback_url.clone();
 
     let password = payload.password.clone();
     let hasher = config.password_hasher.clone();
@@ -85,28 +90,6 @@ where
     else {
         return StatusCode::INTERNAL_SERVER_ERROR;
     };
-
-    // 2. Start a database transaction.
-    // Everything from user lookup through account/session creation should be
-    // atomic so a user row is not left without its credential account row.
-    //
-    // 6. Look up an existing user by normalized email.
-
-    // 7. If the user already exists.
-    // If require_email_verification is true or auto_sign_in is false, return a
-    // generic success response to avoid email enumeration:
-    // - hash the submitted password anyway to reduce timing differences
-    // - optionally call on_existing_user_sign_up
-    // - return { token: null, user: synthetic_user }
-    // Otherwise return 422 user already exists.
-    // 8. If the user does not exist.
-    // Hash the password before creating the user so hashing failures happen
-    // before any database writes. Then create:
-    // - user row with email_verified = false
-    // - account row with provider_id = "credential"
-    // - account_id = user.id
-    // - user_id = user.id
-    // - password = hash
 
     let user_id = auth.generate_id(ModelName::User);
     let account_id = auth.generate_id(ModelName::Account);
@@ -123,28 +106,128 @@ where
         return StatusCode::UNPROCESSABLE_ENTITY;
     };
 
-    let input = CreateUser {
-        id: user_id.clone(),
-        name: payload.name,
-        email: normalized_email,
-        image: None,
-    };
+    if config.require_email_verification {
+        let pending_id = auth.generate_id(ModelName::PendingSignup);
 
-    let Ok(_) = txdb.create_user(input).await else {
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    };
+        let Ok(pending) = txdb
+            .create_pending_signup(CreatePendingSignup {
+                id: pending_id,
+                account_id,
+                user_id,
+                password_hash: hashed_password,
+                email: normalized_email,
+                name: payload.name,
+                image: None,
+            })
+            .await
+        else {
+            return StatusCode::BAD_REQUEST;
+        };
 
-    let input = CreateAccount {
-        id: account_id,
-        account_id: user_id.clone(),
-        user_id,
-        provider_id: "credential".to_string(),
-        password: Some(hashed_password),
-    };
+        let verification_id = auth.generate_id(ModelName::Verification);
+        let token = verification::generate_verification_token();
 
-    let Ok(_) = txdb.create_account(input).await else {
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    };
+        let Ok(_verification) = txdb
+            .create_verification(CreateVerification {
+                id: verification_id,
+                kind: ModelName::PendingSignup.to_string(),
+                identifier: pending.id,
+                expires_at: Utc::now(),
+                token_hash: token.token_hash,
+            })
+            .await
+        else {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        };
+
+        let Some(sender) = &auth.config.email_verification.send_verification_email else {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        };
+
+        if txdb.commit().await.is_err() {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+
+        let Ok(verification_url) = verification::create_verification_url(
+            &auth.config.base_url,
+            &auth.config.base_path,
+            &token.encoded_token,
+            callback_url.as_deref(),
+        ) else {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        };
+
+        if sender
+            .send_verification_email(SendVerificationEmail {
+                user: VerificationEmailUser {
+                    id: pending.user_id,
+                    email: pending.email,
+                    name: pending.name,
+                    image: pending.image,
+                },
+                url: verification_url,
+                token: token.encoded_token,
+            })
+            .await
+            .is_err()
+        {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+    } else {
+        let input = CreateUser {
+            id: user_id.clone(),
+            name: payload.name,
+            email: normalized_email,
+            image: None,
+        };
+
+        let Ok(user) = txdb.create_user(input).await else {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        };
+
+        let input = CreateAccount {
+            id: account_id,
+            account_id: user_id.clone(),
+            user_id,
+            provider_id: "credential".to_string(),
+            password: Some(hashed_password),
+        };
+
+        let Ok(_) = txdb.create_account(input).await else {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        };
+
+        if txdb.commit().await.is_err() {
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+
+        if auth.config.email_verification.send_on_signup
+            && let Some(sender) = &auth.config.email_verification.send_verification_email
+        {
+            let token = verification::generate_verification_token();
+            let Ok(verification_url) = verification::create_verification_url(
+                &auth.config.base_url,
+                &auth.config.base_path,
+                &token.encoded_token,
+                callback_url.as_deref(),
+            ) else {
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            };
+
+            let _ = sender
+                .send_verification_email(SendVerificationEmail {
+                    user: VerificationEmailUser {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        image: user.image,
+                    },
+                    url: verification_url,
+                    token: token.encoded_token,
+                })
+                .await;
+        }
+    }
 
     // 9. Send verification email if configured.
     // Better Auth uses:
