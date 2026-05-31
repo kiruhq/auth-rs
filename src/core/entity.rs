@@ -38,7 +38,6 @@ pub(crate) struct PendingSignup {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Clone)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct Verification {
     pub id: String,
@@ -50,4 +49,14 @@ pub(crate) struct Verification {
     pub updated_at: DateTime<Utc>,
 }
 
-pub(crate) struct Session {}
+#[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
+pub(crate) struct Session {
+    pub id: String,
+    pub user_id: String,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}

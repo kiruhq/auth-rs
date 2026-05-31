@@ -1,4 +1,4 @@
-use super::config::{AuthConfig, EmailAndPasswordConfig, EmailVerificationConfig};
+use super::config::{AuthConfig, EmailAndPasswordConfig, EmailVerificationConfig, SessionConfig};
 use crate::adapters::database::DatabaseAdapter;
 use crate::auth::Auth;
 use crate::auth::verification;
@@ -35,6 +35,14 @@ impl<DB> AuthBuilder<DB> {
         F: FnOnce(&mut EmailVerificationConfig),
     {
         f(&mut self.config.email_verification);
+        self
+    }
+
+    pub fn session<F>(mut self, f: F) -> Self
+    where
+        F: FnOnce(&mut SessionConfig),
+    {
+        f(&mut self.config.session);
         self
     }
 }

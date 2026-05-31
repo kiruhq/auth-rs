@@ -1,9 +1,21 @@
 use std::sync::Arc;
 
-#[derive(Default)]
+use chrono::Duration;
+
 pub struct EmailVerificationConfig {
     pub send_verification_email: Option<Arc<dyn VerificationEmailSender>>,
     pub send_on_signup: bool,
+    pub expires_in: Duration,
+}
+
+impl Default for EmailVerificationConfig {
+    fn default() -> Self {
+        EmailVerificationConfig {
+            send_verification_email: None,
+            send_on_signup: false,
+            expires_in: Duration::hours(24),
+        }
+    }
 }
 
 #[derive(Debug)]

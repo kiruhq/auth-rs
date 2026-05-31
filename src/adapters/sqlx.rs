@@ -1,5 +1,6 @@
 mod account;
 mod pending;
+mod session;
 mod user;
 mod verification;
 

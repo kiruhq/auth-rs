@@ -1,6 +1,7 @@
 mod advanced;
 mod email_verification;
 mod id_generator;
+mod session;
 
 use std::sync::Arc;
 
@@ -11,6 +12,7 @@ use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use advanced::AdvancedConfig;
 
 pub use crate::auth::config::email_verification::*;
+pub use crate::auth::config::session::*;
 
 #[derive(Default)]
 pub struct AuthConfig {
@@ -19,6 +21,7 @@ pub struct AuthConfig {
     pub email_and_password: EmailAndPasswordConfig,
     pub advanced: AdvancedConfig,
     pub email_verification: EmailVerificationConfig,
+    pub session: SessionConfig,
 }
 
 pub struct EmailAndPasswordConfig {
