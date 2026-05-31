@@ -44,7 +44,6 @@ fn setup_email_password_routes<DB>(router: Router<AuthState<DB>>) -> Router<Auth
 where
     DB: DatabaseAdapter,
 {
-    router
-        .route("/sign-up/email", post(handlers::email::signup))
-        .route("/sign-in/email", post(handlers::email::signin))
+    router.route("/sign-up/email", post(handlers::signup_email::signup))
+    //.route("/sign-in/email", post(handlers::signup_email::signin))
 }

@@ -1,1 +1,1 @@
-pub mod email;
+pub mod signup_email;
