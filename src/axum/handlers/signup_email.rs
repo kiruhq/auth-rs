@@ -275,7 +275,6 @@ where
     let session_token = if auth.config.email_and_password.auto_sign_in {
         let session_token = token::generate_secret_token();
         let session_id = auth.generate_id(ModelName::Session);
-
         let Ok(_) = txdb
             .create_session(CreateSession {
                 id: session_id,
