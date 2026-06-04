@@ -55,7 +55,6 @@ where
     DB: DatabaseAdapter,
 {
     let Some(token) = bearer_token(&headers) else {
-        // return Json(None) maybe, not necessarily 401
         return Err(StatusCode::UNAUTHORIZED);
     };
 
@@ -87,4 +86,30 @@ where
         session: session.into(),
         user: user.into(),
     }))
+}
+
+pub(crate) async fn signout<DB>(
+    State(state): State<AuthState<DB>>,
+    headers: HeaderMap,
+) -> StatusCode
+where
+    DB: DatabaseAdapter,
+{
+    let Some(token) = bearer_token(&headers) else {
+        return StatusCode::OK;
+    };
+
+    let Ok(Ok(hashed_token)) =
+        tokio::task::spawn_blocking(move || token::hash_secret_token(&token)).await
+    else {
+        return StatusCode::OK;
+    };
+
+    let _ = state
+        .auth()
+        .database
+        .delete_session_by_token_hash(&hashed_token)
+        .await;
+
+    StatusCode::OK
 }

@@ -1,6 +1,7 @@
 use super::{SqlxPostgresAdapter, SqlxPostgresTxnAdapter};
 use crate::adapters::traits::session::{
-    CreateSession, CreateSessionError, GetSessionError, SessionStore, SessionTransactionStore,
+    CreateSession, CreateSessionError, DeleteSessionError, GetSessionError, SessionStore,
+    SessionTransactionStore,
 };
 use crate::core::entity::Session;
 
@@ -11,6 +12,13 @@ impl SessionStore for SqlxPostgresAdapter {
         token_hash: &str,
     ) -> Result<Option<Session>, GetSessionError> {
         get_session_by_token_hash(&self.conn, token_hash).await
+    }
+
+    async fn delete_session_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<Session>, DeleteSessionError> {
+        delete_session_by_token_hash(&self.conn, token_hash).await
     }
 }
 
@@ -76,4 +84,24 @@ where
     .fetch_optional(executor)
     .await
     .map_err(|_| GetSessionError::Stub)
+}
+
+async fn delete_session_by_token_hash<'e, E>(
+    executor: E,
+    token_hash: &str,
+) -> Result<Option<Session>, DeleteSessionError>
+where
+    E: sqlx::Executor<'e, Database = sqlx::Postgres>,
+{
+    sqlx::query_as::<_, Session>(
+        r#"
+DELETE FROM "session"
+WHERE token = $1
+RETURNING id, user_id, token AS token_hash, expires_at, ip_address, user_agent, created_at, updated_at
+"#,
+    )
+        .bind(token_hash)
+        .fetch_optional(executor)
+        .await
+    .map_err(|_| DeleteSessionError::Stub)
 }

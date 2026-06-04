@@ -47,5 +47,9 @@ where
     router
         .route("/sign-up/email", post(handlers::signup_email::signup))
         .route("/sign-in/email", post(handlers::signin_email::signin))
-        .route("/session", get(handlers::session::session))
+        .route(
+            "/session",
+            get(handlers::session::session).delete(handlers::session::signout),
+        )
+        .route("/sign-out", post(handlers::session::signout))
 }

@@ -8,6 +8,11 @@ pub(crate) trait SessionStore: Send + Sync {
         &self,
         token_hash: &str,
     ) -> Result<Option<Session>, GetSessionError>;
+
+    async fn delete_session_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<Session>, DeleteSessionError>;
 }
 
 #[async_trait::async_trait]
@@ -37,5 +42,9 @@ pub(crate) enum CreateSessionError {
 }
 
 pub(crate) enum GetSessionError {
+    Stub,
+}
+
+pub(crate) enum DeleteSessionError {
     Stub,
 }
