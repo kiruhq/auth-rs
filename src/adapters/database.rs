@@ -1,6 +1,9 @@
 use super::traits::{
-    account::AccountStore, pending::PendingSignupStore, session::SessionStore, user::UserStore,
-    verification::VerificationStore,
+    account::{AccountStore, AccountTransactionStore},
+    pending::{PendingSignupStore, PendingSignupTransactionStore},
+    session::{SessionStore, SessionTransactionStore},
+    user::{UserStore, UserTransactionStore},
+    verification::{VerificationStore, VerificationTransactionStore},
 };
 
 pub enum AdapterError {
@@ -27,7 +30,13 @@ pub trait DatabaseAdapter:
 
 #[async_trait::async_trait]
 pub trait DatabaseTransaction:
-    UserStore + AccountStore + PendingSignupStore + VerificationStore + SessionStore + Send + Sync
+    UserTransactionStore
+    + AccountTransactionStore
+    + PendingSignupTransactionStore
+    + VerificationTransactionStore
+    + SessionTransactionStore
+    + Send
+    + Sync
 {
     async fn commit(self) -> Result<(), AdapterError>;
     async fn rollback(self) -> Result<(), AdapterError>;

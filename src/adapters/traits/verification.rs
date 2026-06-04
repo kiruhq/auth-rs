@@ -18,7 +18,15 @@ pub(crate) enum GetVerificationError {
 }
 
 #[async_trait::async_trait]
-pub(crate) trait VerificationStore: Send {
+pub(crate) trait VerificationStore: Send + Sync {
+    async fn get_verification_by_token_hash(
+        &self,
+        hash: &str,
+    ) -> Result<Option<Verification>, GetVerificationError>;
+}
+
+#[async_trait::async_trait]
+pub(crate) trait VerificationTransactionStore: Send {
     async fn create_verification(
         &mut self,
         params: CreateVerification,

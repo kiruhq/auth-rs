@@ -1,20 +1,13 @@
 use super::{SqlxPostgresAdapter, SqlxPostgresTxnAdapter};
 use crate::adapters::traits::session::{
-    CreateSession, CreateSessionError, GetSessionError, SessionStore,
+    CreateSession, CreateSessionError, GetSessionError, SessionStore, SessionTransactionStore,
 };
 use crate::core::entity::Session;
 
 #[async_trait::async_trait]
 impl SessionStore for SqlxPostgresAdapter {
-    async fn create_session(
-        &mut self,
-        session: CreateSession,
-    ) -> Result<Session, CreateSessionError> {
-        create_session(&self.conn, session).await
-    }
-
     async fn get_session_by_token_hash(
-        &mut self,
+        &self,
         token_hash: &str,
     ) -> Result<Option<Session>, GetSessionError> {
         get_session_by_token_hash(&self.conn, token_hash).await
@@ -22,7 +15,7 @@ impl SessionStore for SqlxPostgresAdapter {
 }
 
 #[async_trait::async_trait]
-impl<'a> SessionStore for SqlxPostgresTxnAdapter<'a> {
+impl<'a> SessionTransactionStore for SqlxPostgresTxnAdapter<'a> {
     async fn create_session(
         &mut self,
         session: CreateSession,

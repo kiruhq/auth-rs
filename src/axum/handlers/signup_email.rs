@@ -5,7 +5,7 @@ use crate::adapters::traits::session::CreateSession;
 use crate::adapters::traits::verification::CreateVerification;
 use crate::adapters::traits::{
     account::CreateAccount,
-    user::{CreateUser, UserStore},
+    user::{CreateUser, UserTransactionStore},
 };
 use crate::auth::config::{
     EmailAndPasswordConfig, ModelName, SendVerificationEmail, VerificationEmailUser,
@@ -13,19 +13,18 @@ use crate::auth::config::{
 use crate::auth::token;
 use crate::auth::verification;
 use crate::axum::AuthState;
-use crate::types::data::{EmailSignUpResponse, User as ResponseUser};
-use crate::types::payload::EmailSignUpBody;
+use crate::core::email::normalize_email;
+use crate::types::data::User as ResponseUser;
+use crate::types::payload::{EmailSignInResponse, EmailSignUpBody};
 use axum::{Json, extract::State, http::StatusCode};
 use chrono::Utc;
-use email_address::{EmailAddress, Options};
 
-type SignUpResult = Result<Json<EmailSignUpResponse>, StatusCode>;
+type SignUpResult = Result<Json<EmailSignInResponse>, StatusCode>;
 
 enum EmailSignUpValidationError {
     PasswordTooShort,
     PasswordTooLong,
     InvalidPassword,
-    InvalidEmail,
 }
 
 fn validate_signup_input(
@@ -45,19 +44,6 @@ fn validate_signup_input(
     }
 
     Ok(())
-}
-
-fn normalize_email(email: &str) -> Result<String, EmailSignUpValidationError> {
-    let email = email.trim().to_lowercase();
-
-    let options = Options::default()
-        .without_display_text()
-        .without_domain_literal();
-
-    EmailAddress::parse_with_options(&email, options)
-        .map_err(|_| EmailSignUpValidationError::InvalidEmail)?;
-
-    Ok(email)
 }
 
 pub(crate) async fn signup<DB>(
@@ -211,7 +197,7 @@ where
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    Ok(Json(EmailSignUpResponse {
+    Ok(Json(EmailSignInResponse {
         token: None,
         user: None,
     }))
@@ -323,7 +309,7 @@ where
             .await;
     }
 
-    Ok(Json(EmailSignUpResponse {
+    Ok(Json(EmailSignInResponse {
         token: session_token,
         user: Some(ResponseUser::from(user)),
     }))

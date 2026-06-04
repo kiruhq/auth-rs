@@ -1,20 +1,14 @@
 use super::{SqlxPostgresAdapter, SqlxPostgresTxnAdapter};
 use crate::adapters::traits::verification::{
     CreateVerification, CreateVerificationError, GetVerificationError, VerificationStore,
+    VerificationTransactionStore,
 };
 use crate::core::entity::Verification;
 
 #[async_trait::async_trait]
 impl VerificationStore for SqlxPostgresAdapter {
-    async fn create_verification(
-        &mut self,
-        params: CreateVerification,
-    ) -> Result<Verification, CreateVerificationError> {
-        create_verification(&self.conn, params).await
-    }
-
     async fn get_verification_by_token_hash(
-        &mut self,
+        &self,
         hash: &str,
     ) -> Result<Option<Verification>, GetVerificationError> {
         get_verification_by_token_hash(&self.conn, hash).await
@@ -22,7 +16,7 @@ impl VerificationStore for SqlxPostgresAdapter {
 }
 
 #[async_trait::async_trait]
-impl<'a> VerificationStore for SqlxPostgresTxnAdapter<'a> {
+impl<'a> VerificationTransactionStore for SqlxPostgresTxnAdapter<'a> {
     async fn create_verification(
         &mut self,
         params: CreateVerification,

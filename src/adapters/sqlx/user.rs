@@ -1,25 +1,23 @@
 use super::SqlxPostgresAdapter;
 use crate::adapters::sqlx::SqlxPostgresTxnAdapter;
-use crate::adapters::traits::user::{CreateUser, CreateUserError, GetUserError, UserStore};
+use crate::adapters::traits::user::{
+    CreateUser, CreateUserError, GetUserError, UserStore, UserTransactionStore,
+};
 use crate::core::entity::User;
 
 #[async_trait::async_trait]
 impl UserStore for SqlxPostgresAdapter {
-    async fn create_user(&mut self, user: CreateUser) -> Result<User, CreateUserError> {
-        create_user(&self.conn, user).await
-    }
-
-    async fn get_user_by_id(&mut self, id: &str) -> Result<Option<User>, GetUserError> {
+    async fn get_user_by_id(&self, id: &str) -> Result<Option<User>, GetUserError> {
         get_user_by_id(&self.conn, id).await
     }
 
-    async fn get_user_by_email(&mut self, email: &str) -> Result<Option<User>, GetUserError> {
+    async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, GetUserError> {
         get_user_by_email(&self.conn, email).await
     }
 }
 
 #[async_trait::async_trait]
-impl<'a> UserStore for SqlxPostgresTxnAdapter<'a> {
+impl<'a> UserTransactionStore for SqlxPostgresTxnAdapter<'a> {
     async fn create_user(&mut self, user: CreateUser) -> Result<User, CreateUserError> {
         create_user(&mut *self.txn, user).await
     }

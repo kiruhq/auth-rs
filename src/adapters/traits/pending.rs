@@ -19,7 +19,15 @@ pub enum GetPendingSignupError {
 }
 
 #[async_trait::async_trait]
-pub(crate) trait PendingSignupStore: Send {
+pub(crate) trait PendingSignupStore: Send + Sync {
+    async fn get_pending_signup_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PendingSignup>, GetPendingSignupError>;
+}
+
+#[async_trait::async_trait]
+pub(crate) trait PendingSignupTransactionStore: Send {
     async fn create_pending_signup(
         &mut self,
         params: CreatePendingSignup,

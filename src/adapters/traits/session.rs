@@ -3,7 +3,15 @@ use chrono::{DateTime, Utc};
 use crate::core::entity::Session;
 
 #[async_trait::async_trait]
-pub(crate) trait SessionStore: Send {
+pub(crate) trait SessionStore: Send + Sync {
+    async fn get_session_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<Session>, GetSessionError>;
+}
+
+#[async_trait::async_trait]
+pub(crate) trait SessionTransactionStore: Send {
     async fn create_session(
         &mut self,
         session: CreateSession,

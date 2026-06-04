@@ -1,3 +1,4 @@
+use super::data::User;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -10,6 +11,13 @@ pub struct EmailSignUpBody {
     pub remember_me: Option<bool>,
     #[serde(rename = "callbackURL")]
     pub callback_url: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct EmailSignInResponse {
+    pub token: Option<String>,
+    pub user: Option<User>,
 }
 
 #[derive(Serialize, Deserialize)]

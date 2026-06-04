@@ -16,7 +16,13 @@ pub(crate) struct CreateUser {
 }
 
 #[async_trait::async_trait]
-pub(crate) trait UserStore: Send {
+pub(crate) trait UserStore: Send + Sync {
+    async fn get_user_by_id(&self, id: &str) -> Result<Option<User>, GetUserError>;
+    async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, GetUserError>;
+}
+
+#[async_trait::async_trait]
+pub(crate) trait UserTransactionStore: Send {
     async fn create_user(&mut self, user: CreateUser) -> Result<User, CreateUserError>;
     async fn get_user_by_id(&mut self, id: &str) -> Result<Option<User>, GetUserError>;
     async fn get_user_by_email(&mut self, email: &str) -> Result<Option<User>, GetUserError>;

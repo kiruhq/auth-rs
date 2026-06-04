@@ -17,7 +17,16 @@ pub(crate) enum GetAccountError {
 }
 
 #[async_trait::async_trait]
-pub(crate) trait AccountStore: Send {
+pub(crate) trait AccountStore: Send + Sync {
+    async fn get_account(
+        &self,
+        provider: &str,
+        provider_account_id: &str,
+    ) -> Result<Option<Account>, GetAccountError>;
+}
+
+#[async_trait::async_trait]
+pub(crate) trait AccountTransactionStore: Send {
     async fn create_account(
         &mut self,
         account: CreateAccount,

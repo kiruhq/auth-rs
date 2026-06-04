@@ -63,10 +63,3 @@ impl From<entity::User> for User {
         }
     }
 }
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct EmailSignUpResponse {
-    pub token: Option<String>,
-    pub user: Option<User>,
-}

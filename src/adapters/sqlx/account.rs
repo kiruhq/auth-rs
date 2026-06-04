@@ -1,20 +1,13 @@
 use crate::adapters::sqlx::{SqlxPostgresAdapter, SqlxPostgresTxnAdapter};
 use crate::adapters::traits::account::{
-    AccountStore, CreateAccount, CreateAccountError, GetAccountError,
+    AccountStore, AccountTransactionStore, CreateAccount, CreateAccountError, GetAccountError,
 };
 use crate::core::entity::Account;
 
 #[async_trait::async_trait]
 impl AccountStore for SqlxPostgresAdapter {
-    async fn create_account(
-        &mut self,
-        account: CreateAccount,
-    ) -> Result<Account, CreateAccountError> {
-        create_account(&self.conn, account).await
-    }
-
     async fn get_account(
-        &mut self,
+        &self,
         provider: &str,
         provider_account_id: &str,
     ) -> Result<Option<Account>, GetAccountError> {
@@ -23,7 +16,7 @@ impl AccountStore for SqlxPostgresAdapter {
 }
 
 #[async_trait::async_trait]
-impl<'a> AccountStore for SqlxPostgresTxnAdapter<'a> {
+impl<'a> AccountTransactionStore for SqlxPostgresTxnAdapter<'a> {
     async fn create_account(
         &mut self,
         account: CreateAccount,

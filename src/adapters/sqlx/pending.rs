@@ -2,20 +2,14 @@ use super::SqlxPostgresAdapter;
 use crate::adapters::sqlx::SqlxPostgresTxnAdapter;
 use crate::adapters::traits::pending::{
     CreatePendingSignup, CreatePendingSignupError, GetPendingSignupError, PendingSignupStore,
+    PendingSignupTransactionStore,
 };
 use crate::core::entity::PendingSignup;
 
 #[async_trait::async_trait]
 impl PendingSignupStore for SqlxPostgresAdapter {
-    async fn create_pending_signup(
-        &mut self,
-        user: CreatePendingSignup,
-    ) -> Result<PendingSignup, CreatePendingSignupError> {
-        create_pending_signup(&self.conn, user).await
-    }
-
     async fn get_pending_signup_by_id(
-        &mut self,
+        &self,
         id: &str,
     ) -> Result<Option<PendingSignup>, GetPendingSignupError> {
         get_pending_signup_by_id(&self.conn, id).await
@@ -23,7 +17,7 @@ impl PendingSignupStore for SqlxPostgresAdapter {
 }
 
 #[async_trait::async_trait]
-impl<'a> PendingSignupStore for SqlxPostgresTxnAdapter<'a> {
+impl<'a> PendingSignupTransactionStore for SqlxPostgresTxnAdapter<'a> {
     async fn create_pending_signup(
         &mut self,
         user: CreatePendingSignup,
