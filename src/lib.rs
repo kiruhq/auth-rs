@@ -1,4 +1,4 @@
-mod adapters;
+pub mod adapters;
 mod auth;
 mod core;
 pub mod schema;

@@ -5,12 +5,19 @@ mod user;
 mod verification;
 
 use crate::adapters::database::{AdapterError, DatabaseAdapter, DatabaseTransaction};
+use async_trait::async_trait;
 
 pub struct SqlxPostgresAdapter {
     conn: sqlx::PgPool,
 }
 
-#[async_trait::async_trait]
+impl SqlxPostgresAdapter {
+    pub(crate) fn new(conn: sqlx::Pool<sqlx::Postgres>) -> Self {
+        Self { conn }
+    }
+}
+
+#[async_trait]
 impl DatabaseAdapter for SqlxPostgresAdapter {
     type Transaction<'a> = SqlxPostgresTxnAdapter<'a>;
 
@@ -29,7 +36,7 @@ pub struct SqlxPostgresTxnAdapter<'a> {
     txn: sqlx::PgTransaction<'a>,
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<'a> DatabaseTransaction for SqlxPostgresTxnAdapter<'a> {
     async fn commit(self) -> Result<(), AdapterError> {
         self.txn

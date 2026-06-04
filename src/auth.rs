@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use crate::auth::config::ModelName;
 
-use builder::AuthBuilder;
+pub use builder::AuthBuilder;
 use config::AuthConfig;
 
 pub struct Auth<DB> {

@@ -47,6 +47,23 @@ impl<DB> AuthBuilder<DB> {
     }
 }
 
+#[cfg(feature = "sqlx")]
+mod sqlx {
+    use super::*;
+    use crate::adapters::sqlx::SqlxPostgresAdapter;
+    use ::sqlx::PgPool;
+
+    impl AuthBuilder<NoAdapter> {
+        pub fn sqlx(self, pool: PgPool) -> AuthBuilder<crate::adapters::sqlx::SqlxPostgresAdapter> {
+            let database = SqlxPostgresAdapter::new(pool);
+            AuthBuilder {
+                config: self.config,
+                database,
+            }
+        }
+    }
+}
+
 impl AuthBuilder<NoAdapter> {
     pub fn database<DB>(self, database: DB) -> AuthBuilder<DB>
     where
@@ -64,6 +81,21 @@ pub enum AuthBuilderError {
     MissingSendEmailVerification,
     InvalidBaseUrl(String),
 }
+
+impl std::fmt::Display for AuthBuilderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingSendEmailVerification => {
+                write!(f, "missing send verification email callback")
+            }
+            Self::InvalidBaseUrl(message) => {
+                write!(f, "invalid base url: {message}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for AuthBuilderError {}
 
 impl<DB> AuthBuilder<DB>
 where
@@ -97,6 +129,8 @@ fn validate_build_config(config: &AuthConfig) -> Result<(), AuthBuilderError> {
 
 #[cfg(test)]
 mod tests {
+    use sea_query::Iden;
+
     use crate::auth::config::{
         SendVerificationEmail, SendVerificationEmailError, VerificationEmailSender,
     };
@@ -149,8 +183,10 @@ mod tests {
 
     #[test]
     fn validates_verification_email_base_url() {
-        let mut config = AuthConfig::default();
-        config.base_url = "not-a-url".to_string();
+        let mut config = AuthConfig {
+            base_url: "not-a-url".to_string(),
+            ..Default::default()
+        };
         config.email_verification.send_on_signup = true;
         config.email_verification.send_verification_email =
             Some(Arc::new(NoopVerificationEmailSender));
@@ -163,9 +199,12 @@ mod tests {
 
     #[test]
     fn accepts_valid_verification_email_url_config() {
-        let mut config = AuthConfig::default();
-        config.base_url = "https://example.com".to_string();
-        config.base_path = "/api/auth".to_string();
+        let mut config = AuthConfig {
+            base_url: "https://example.com".to_string(),
+            base_path: "/api/auth".to_string(),
+            ..Default::default()
+        };
+
         config.email_verification.send_on_signup = true;
         config.email_verification.send_verification_email =
             Some(Arc::new(NoopVerificationEmailSender));
