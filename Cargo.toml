@@ -24,3 +24,13 @@ sha2 = "0.11.0"
 sqlx = { version="0.9.0", features = ["runtime-tokio", "postgres", "chrono"], optional = true }
 tokio = "1.52.3"
 url = "2.5.8"
+
+[dev-dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
+testcontainers-modules = { version = "0.15", features = ["postgres"] }
+tokio = { version = "1.52.3", features = ["macros", "rt-multi-thread"] }
+
+[[test]]
+name = "axum_signup_email"
+path = "tests/axum_signup_email.rs"
+required-features = ["axum", "sqlx"]

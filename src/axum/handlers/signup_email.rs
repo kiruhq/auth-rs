@@ -44,10 +44,6 @@ fn validate_signup_input(
         return Err(EmailSignUpValidationError::PasswordTooLong);
     }
 
-    if !email_address::EmailAddress::is_valid(&payload.email) {
-        return Err(EmailSignUpValidationError::InvalidEmail);
-    }
-
     Ok(())
 }
 
@@ -88,6 +84,7 @@ where
     let Ok(normalized_email) = normalize_email(&payload.email) else {
         return Err(StatusCode::BAD_REQUEST);
     };
+
     let callback_url = payload.callback_url.clone();
 
     let password = payload.password.clone();
