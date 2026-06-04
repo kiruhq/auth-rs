@@ -4,7 +4,7 @@ mod types;
 use crate::Auth;
 use crate::adapters::database::DatabaseAdapter;
 use axum::Router;
-use axum::routing::post;
+use axum::routing::{get, post};
 use std::sync::Arc;
 
 struct AuthState<DB> {
@@ -47,4 +47,5 @@ where
     router
         .route("/sign-up/email", post(handlers::signup_email::signup))
         .route("/sign-in/email", post(handlers::signin_email::signin))
+        .route("/session", get(handlers::session::session))
 }

@@ -39,3 +39,8 @@ required-features = ["axum", "sqlx"]
 name = "axum_signin_email"
 path = "tests/axum_signin_email.rs"
 required-features = ["axum", "sqlx"]
+
+[[test]]
+name = "axum_session"
+path = "tests/axum_session.rs"
+required-features = ["axum", "sqlx"]

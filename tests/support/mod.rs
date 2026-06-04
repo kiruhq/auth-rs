@@ -117,6 +117,20 @@ impl TestAuthApp {
         .await
     }
 
+    pub async fn session(&self, token: &str) -> TestResult<(StatusCode, String)> {
+        let response = self
+            .client
+            .get(format!("{}/api/auth/session", self.server_url))
+            .bearer_auth(token)
+            .send()
+            .await?;
+
+        let status = response.status();
+        let body = response.text().await?;
+
+        Ok((status, body))
+    }
+
     pub async fn user_by_email(&self, email: &str) -> TestResult<UserRow> {
         Ok(sqlx::query_as(
             r#"

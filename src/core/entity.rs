@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct User {
     pub id: String,
@@ -8,7 +9,9 @@ pub(crate) struct User {
     pub email: String,
     pub email_verified: bool,
     pub image: Option<String>,
+    #[serde(skip)]
     pub created_at: DateTime<Utc>,
+    #[serde(skip)]
     pub updated_at: DateTime<Utc>,
 }
 
@@ -49,14 +52,18 @@ pub(crate) struct Verification {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Serialize)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 pub(crate) struct Session {
     pub id: String,
     pub user_id: String,
+    #[serde(skip)]
     pub token_hash: String,
     pub expires_at: DateTime<Utc>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    #[serde(skip)]
     pub created_at: DateTime<Utc>,
+    #[serde(skip)]
     pub updated_at: DateTime<Utc>,
 }
